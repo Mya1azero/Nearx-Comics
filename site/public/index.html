@@ -5,82 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NearX Comics — твой персональный комикс</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header>
-  <div class="brand">NEARX<span>COMICS</span></div>
+  <div class="logo">
+    <div class="logo-top">NEAR<span class="logo-x">X</span></div>
+    <div class="logo-bottom">COMICS</div>
+  </div>
   <div class="wallet" id="wallet">…</div>
 </header>
 
-<div class="hero">
-  <h1 class="hero-title">ТВОЯ ИСТОРИЯ —<br><span>ТВОЙ КОМИКС</span></h1>
-  <p class="hero-sub">Аниме, супергероика, нуар, ретро, фэнтези — здесь все вселенные сходятся в одной.
-  Загрузи фото, расскажи историю — получишь настоящую книжку, где герой это ты.</p>
-  <div class="hero-panel">
-    <img src="hero-banner.jpg" alt="Герои разных вселенных на одной улице">
-    <div class="hero-bubble">Займи своё место в этом ряду</div>
+<div class="hero panel">
+  <div class="burst-wrap">
+    <div class="burst-bg"></div>
+    <h1 class="hero-title">ТВОЯ ИСТОРИЯ —<br>ТВОЙ КОМИКС</h1>
   </div>
-  <button class="primary big" id="ctaStart">Собрать свой комикс</button>
+  <p class="hero-sub">Загрузи фото, расскажи историю — получишь настоящую книжку, где герой это ты.</p>
+  <button class="cta-burst" id="ctaStart"><span>СОБРАТЬ СВОЙ КОМИКС</span></button>
 </div>
 
-<nav id="steps">
-  <button data-step="1" class="active"><b>1</b>Герои</button>
-  <button data-step="2"><b>2</b>История</button>
-  <button data-step="3"><b>3</b>Сценарий</button>
-  <button data-step="4"><b>4</b>Комикс</button>
+<nav id="steps" class="panel">
+  <div class="steps-line"></div>
+  <button data-step="1" class="active"><b>1</b><span>ГЕРОИ</span></button>
+  <button data-step="2"><b>2</b><span>ИСТОРИЯ</span></button>
+  <button data-step="3"><b>3</b><span>СЦЕНАРИЙ</span></button>
+  <button data-step="4"><b>4</b><span>КОМИКС</span></button>
 </nav>
 
 <main>
 
-<section id="step1" class="step active">
-  <h1>Кто герои твоего комикса</h1>
+<section id="step1" class="step active panel">
+  <h2 class="plate-title">ЗАГРУЗИ ГЕРОЕВ СВОЕЙ ИСТОРИИ</h2>
   <p class="hint">Загрузи 1–3 фото на героя — лицо станет персонажем. Максимум два героя, второго можно придумать без фото.</p>
   <div class="row" id="styleRow">
-    <label>Стиль рисовки</label>
+    <label class="mini-plate">СТИЛЬ РИСОВКИ</label>
     <div class="chips" id="styleChips"></div>
   </div>
   <div id="heroes"></div>
-  <button class="ghost" id="addHero">Добавить второго героя</button>
-  <div class="nav-row"><span></span><button class="primary" id="to2">Дальше: история</button></div>
+  <button class="ghost" id="addHero">+ Добавить второго героя</button>
+  <div class="nav-row"><span></span><button class="primary" id="to2">ДАЛЬШЕ: ИСТОРИЯ</button></div>
   <div class="example">
-    <h2>Так выглядит готовая книжка</h2>
+    <h2 class="plate-title">ПРИМЕРЫ СТРАНИЦ КОМИКСА</h2>
     <p class="hint">«Случайная встреча», 8 страниц — сделана этим же конвейером из двух фото и трёх фраз истории.</p>
     <div class="ex-strip" id="exStrip"></div>
   </div>
 </section>
 
-<section id="step2" class="step">
-  <h1>Расскажи историю</h1>
+<section id="step2" class="step panel">
+  <h2 class="plate-title">РАССКАЖИ ИСТОРИЮ</h2>
   <p class="hint">Своими словами, как другу: что случилось, где, чем кончилось. Можно надиктовать голосом — я разверну это в полноценный сюжет.</p>
   <div class="story-box">
     <textarea id="story" rows="7" placeholder="Например: мы познакомились под дождём — у неё улетел зонт, я его поймал…"></textarea>
-    <button id="mic" class="mic" title="Надиктовать">Голосом</button>
+    <button id="mic" class="mic" title="Надиктовать">ГОЛОСОМ</button>
   </div>
   <button class="ghost small" id="fillExample">Заполнить примером</button>
   <div class="row">
-    <label>Страниц: <output id="pagesOut">6</output></label>
+    <label class="mini-plate">СТРАНИЦ: <output id="pagesOut">6</output></label>
     <input type="range" id="pages" min="1" max="12" value="6">
   </div>
   <div class="row">
-    <label>Тон</label>
+    <label class="mini-plate">ТОН</label>
     <div class="chips" id="toneChips"></div>
   </div>
-  <div class="nav-row"><button class="ghost" data-back="1">Назад</button><button class="primary" id="to3">Развернуть в сценарий</button></div>
+  <div class="nav-row"><button class="ghost" data-back="1">Назад</button><button class="primary" id="to3">РАЗВЕРНУТЬ В СЦЕНАРИЙ</button></div>
 </section>
 
-<section id="step3" class="step">
-  <h1>Сценарий — проверь и поправь</h1>
+<section id="step3" class="step panel">
+  <h2 class="plate-title">СЦЕНАРИЙ — ПРОВЕРЬ И ПОПРАВЬ</h2>
   <p class="hint">Я разложил историю по страницам и кадрам. Любой текст можно править прямо здесь. Реплика длиннее 8 слов подсветится — сократи её, иначе пузырь выйдет кривым.</p>
   <div id="scenario"></div>
-  <div class="nav-row"><button class="ghost" data-back="2">Назад</button><button class="primary" id="to4">Дальше: рисовать</button></div>
+  <div class="nav-row"><button class="ghost" data-back="2">Назад</button><button class="primary" id="to4">ДАЛЬШЕ: РИСОВАТЬ</button></div>
 </section>
 
-<section id="step4" class="step">
-  <h1>Комикс</h1>
+<section id="step4" class="step panel">
+  <h2 class="plate-title">ТВОЙ КОМИКС</h2>
   <p class="hint" id="drawHint"></p>
-  <button class="primary big" id="draw">Нарисовать комикс</button>
+  <button class="primary big" id="draw">НАРИСОВАТЬ КОМИКС</button>
   <div id="album"></div>
   <div class="nav-row">
     <button class="ghost" data-back="3">К сценарию</button>
