@@ -220,7 +220,14 @@ function renderStyles() {
     const b = document.createElement('button');
     b.textContent = label;
     b.classList.toggle('sel', (JOB.styleKey || 'kino') === k);
-    b.onclick = () => { JOB.styleKey = k; saveMeta({ styleKey: k }); renderStyles(); };
+    b.onclick = () => {
+      const drawn = JOB.heroes.some(h => h.sheet);
+      // Стиль вшит в лист героя: сменил стиль — лист надо перерисовать, иначе
+      // книжка выйдет в одном стиле, а герой в другом.
+      if (drawn && k !== JOB.styleKey && !confirm('Листы героев нарисованы в прежнем стиле. Их нужно будет перерисовать, иначе стиль книжки не сойдётся. Сменить стиль?')) return;
+      JOB.styleKey = k; saveMeta({ styleKey: k }); renderStyles();
+      if (drawn) toast('Стиль сменён — перерисуй листы героев');
+    };
     box.appendChild(b);
   });
 }

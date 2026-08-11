@@ -138,9 +138,26 @@ async function makeScenario({ story, pagesCount, tone, heroes }) {
   // Жёстко валим только то, что не починить: пустой или бессвязный сценарий.
   if (!sc || !Array.isArray(sc.pages) || !sc.pages.length)
     throw new Error('сценарист вернул пустой сценарий, попробуй ещё раз');
-  // Число страниц выравниваем сами: лишнее срезаем, недостающее не выдумываем.
+
+  // Человек заплатил за N страниц — значит их должно быть ровно N.
+  // Лишнее срезаем, недостающее дописываем продолжением (модели любят
+  // «сжать» историю в меньшее число страниц).
   if (sc.pages.length > pagesCount) sc.pages = sc.pages.slice(0, pagesCount);
+  let guard = 0;
+  while (sc.pages.length < pagesCount && guard++ < 3) {
+    const need = pagesCount - sc.pages.length;
+    const contUser = `${user}\n\nУже написаны первые ${sc.pages.length} страниц этой же истории:\n${JSON.stringify({ title: sc.title, pages: sc.pages })}\n\n` +
+      `Напиши ПРОДОЛЖЕНИЕ: ровно ${need} следующих страниц (номера с ${sc.pages.length + 1}), не повторяя уже показанное, ` +
+      `доводя историю до развязки на последней. Верни строго JSON вида {"pages":[…]} только с новыми страницами.`;
+    let more;
+    try { more = repairScenario(await callOpenRouter(CHEAP_MODEL, CRAFT, contUser)); }
+    catch { break; }
+    const add = (more && Array.isArray(more.pages) ? more.pages : []).slice(0, need);
+    if (!add.length) break;
+    sc.pages = sc.pages.concat(add);
+  }
   sc.pages.forEach((p, i) => { p.n = i + 1; });
+  if (sc.pages.length !== pagesCount) errs.push(`страниц ${sc.pages.length} вместо ${pagesCount}`);
   return { scenario: sc, demo: false, warnings: errs };
 }
 

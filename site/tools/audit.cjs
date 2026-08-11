@@ -148,6 +148,7 @@ async function check(name, fn) {
     const sc = r.data.scenario;
     if (!sc.pages || !sc.pages.length) throw new Error('нет страниц');
     const problems = [];
+    if (sc.pages.length !== 3) problems.push(`заказано 3 страницы, пришло ${sc.pages.length}`);
     sc.pages.forEach((p, i) => {
       const panels = p.rows.reduce((a, x) => a + x.panels.length, 0);
       if (panels < 4 || panels > 8) problems.push(`стр.${i + 1}: кадров ${panels}`);
