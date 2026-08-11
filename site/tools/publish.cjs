@@ -11,7 +11,7 @@ const SRC = path.resolve(__dirname, '..', '..');            // NearX Comics
 const DEPLOY = path.resolve(SRC, '..', 'nearx-comics-deploy');
 const WABA = '/home/cloudcli/workspace/WABA_manager/WABA_manager';
 const REPO = 'nearx-comics';
-const SSH_REMOTE = `git@github.com:Mya1azero/${REPO}.git`;
+const SSH_REMOTE = 'git@github.com:Mya1azero/Nearx-Comics.git';
 
 const run = (cmd, cwd) => execSync(cmd, { cwd, stdio: 'pipe' }).toString().trim();
 
