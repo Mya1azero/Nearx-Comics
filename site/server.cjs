@@ -16,7 +16,7 @@ const UPLOADS = path.join(SITE, 'uploads');
 fs.mkdirSync(JOBS, { recursive: true });
 fs.mkdirSync(UPLOADS, { recursive: true });
 
-const { makeScenario, rewritePage, hasKey } = require('./llm.cjs');
+const { makeScenario, rewritePage, describePerson, hasKey } = require('./llm.cjs');
 const { STYLES, buildHeroSheetPrompt } = require('./prompt.cjs');
 
 const PAGE_CREDITS = 10;      // страница 2K gpt-image-2
@@ -96,6 +96,17 @@ app.post('/api/job', (req, res) => {
 app.get('/api/job/:id', (req, res) => {
   const job = readJob(req.params.id);
   if (!job) return res.status(404).json({ error: 'нет такой заявки' });
+  // Бесплатный облачный тариф усыпляет машину: рисовальщик мог не пережить сон.
+  // Молчащий больше 8 минут считаем зависшим, чтобы человек мог продолжить.
+  if (job.status === 'drawing') {
+    const beat = Date.parse(job.heartbeat || job.startedAt || job.createdAt || 0);
+    if (beat && Date.now() - beat > 8 * 60 * 1000) {
+      job.status = 'stalled';
+      (job.pages || []).forEach(p => { if (p && p.status === 'drawing') p.status = 'queued'; });
+      if (job.cover && job.cover.status === 'drawing') job.cover = null;
+      writeJob(job);
+    }
+  }
   const view = {
     ...job,
     heroes: job.heroes.map(h => ({ ...h, photos: (h.photos || []).map(publicUrl), sheet: publicUrl(h.sheet) })),
@@ -132,6 +143,55 @@ app.post('/api/job/:jobId/hero/:heroIndex/photos', (req, res, next) => {
   res.json({ ok: true, photos: job.heroes[i].photos.map(publicUrl) });
 });
 
+// Убрать одно фото героя (файл с диска тоже).
+app.post('/api/job/:jobId/hero/:heroIndex/photo/remove', (req, res) => {
+  const job = readJob(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'нет заявки' });
+  const i = parseInt(req.params.heroIndex, 10);
+  const hero = job.heroes[i];
+  if (!hero) return res.status(404).json({ error: 'нет героя' });
+  const { url } = req.body || {};
+  const before = hero.photos || [];
+  const keep = before.filter(p => publicUrl(p) !== url);
+  before.filter(p => publicUrl(p) === url).forEach(p => { try { fs.unlinkSync(p); } catch {} });
+  hero.photos = keep;
+  writeJob(job);
+  res.json({ ok: true, photos: keep.map(publicUrl) });
+});
+
+// Убрать героя целиком.
+app.post('/api/job/:jobId/hero/:heroIndex/remove', (req, res) => {
+  const job = readJob(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'нет заявки' });
+  const i = parseInt(req.params.heroIndex, 10);
+  const hero = job.heroes[i];
+  if (hero) (hero.photos || []).forEach(p => { try { fs.unlinkSync(p); } catch {} });
+  job.heroes.splice(i, 1);
+  writeJob(job);
+  res.json({ ok: true });
+});
+
+// Карточка героя по фото: внешность пишет ИИ, человек только правит при желании.
+app.post('/api/job/:jobId/hero/:heroIndex/describe', async (req, res) => {
+  const job = readJob(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'нет заявки' });
+  const i = parseInt(req.params.heroIndex, 10);
+  const hero = job.heroes[i];
+  if (!hero || !(hero.photos || []).length) return res.status(400).json({ error: 'сначала загрузи фото' });
+  if (!hasKey()) return res.status(503).json({ error: 'распознавание фото пока недоступно — опиши героя словами' });
+  try {
+    const { appearance, vibe } = await describePerson(hero.photos);
+    const fresh = readJob(req.params.jobId);
+    fresh.heroes[i].desc = appearance;
+    fresh.heroes[i].vibe = vibe;
+    fresh.heroes[i].descAuto = true;
+    writeJob(fresh);
+    res.json({ ok: true, desc: appearance, vibe });
+  } catch (e) {
+    res.status(500).json({ error: 'не разглядел фото: ' + String(e.message).slice(0, 120) });
+  }
+});
+
 app.post('/api/job/:jobId/hero/:heroIndex', async (req, res) => {
   const job = readJob(req.params.jobId);
   if (!job) return res.status(404).json({ error: 'нет заявки' });
@@ -143,15 +203,21 @@ app.post('/api/job/:jobId/hero/:heroIndex', async (req, res) => {
   writeJob(job);
   if (!generate) return res.json({ ok: true });
 
-  if (!job.heroes[i].photos || !job.heroes[i].photos.length)
-    return res.status(400).json({ error: 'сначала загрузи 1–3 фото героя' });
+  const hasPhotos = (job.heroes[i].photos || []).length > 0;
+  if (!hasPhotos && !(job.heroes[i].desc || '').trim())
+    return res.status(400).json({ error: 'загрузи фото или опиши придуманного героя словами' });
   const remaining = engineRemainingCredits();
   if (remaining !== null && remaining < HERO_CREDITS)
     return res.status(402).json({ error: 'копилка сайта пуста — скажи владельцу' });
   try {
-    const prompt = buildHeroSheetPrompt({ name: job.heroes[i].name || 'герой', desc: job.heroes[i].desc || 'обычный человек', styleKey: job.styleKey });
+    const prompt = buildHeroSheetPrompt({
+      name: job.heroes[i].name || 'герой',
+      desc: job.heroes[i].desc || 'обычный человек',
+      styleKey: job.styleKey,
+      fromPhoto: hasPhotos
+    });
     const args = ['crea', prompt];
-    job.heroes[i].photos.forEach(p => args.push('--ref', p));
+    (job.heroes[i].photos || []).forEach(p => args.push('--ref', p));
     args.push('--models', 'nano-banana-2', '--format', 'square');
     const out = execFileSync('node', [path.join(ENGINE, 'bin', 'vis.js'), ...args],
       { cwd: ENGINE, stdio: 'pipe', timeout: 4 * 60 * 1000 }).toString();
@@ -213,6 +279,8 @@ app.post('/api/job/:id/draw', (req, res) => {
   if (!job || !job.scenario) return res.status(400).json({ error: 'сначала сценарий' });
   if (job.status === 'drawing') return res.status(400).json({ error: 'уже рисуется' });
   if (!job.heroes.some(h => h.sheet)) return res.status(400).json({ error: 'сначала создай лист героя (шаг 1)' });
+  if (job.scenario.pages.length > MAX_PAGES)
+    return res.status(400).json({ error: `страниц не больше ${MAX_PAGES} — убери лишние в сценарии` });
 
   // Пузыри не длиннее 8 слов — та же проверка, что в редакторе.
   for (const p of job.scenario.pages)
@@ -297,6 +365,23 @@ app.get('/api/job/:id/zip', (req, res) => {
   arc.finalize();
 });
 
+// Показ готовой книжки в телеграм-канале владельца (наш канал показа).
+app.post('/api/job/:id/telegram', (req, res) => {
+  const job = readJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'нет заявки' });
+  const files = [];
+  if (job.cover && job.cover.status === 'done') files.push([job.cover.framed || job.cover.raw, `Обложка «${job.scenario ? job.scenario.title : 'комикс'}»`]);
+  (job.pages || []).forEach((p, i) => { if (p && p.status === 'done') files.push([p.framed || p.raw, `Страница ${i + 1}`]); });
+  if (!files.length) return res.status(400).json({ error: 'ещё нечего отправлять' });
+  const TG = path.resolve(SITE, '..', 'bot', 'tg.js');
+  if (!fs.existsSync(TG)) return res.status(503).json({ error: 'телеграм-канал не настроен' });
+  // Отправка идёт фоном: пользователь не ждёт, ответ сразу.
+  const script = files.map(([f, c]) => `node ${JSON.stringify(TG)} send ${JSON.stringify(f)} ${JSON.stringify(c)}`).join('; ');
+  const child = spawn('sh', ['-c', script], { detached: true, stdio: 'ignore' });
+  child.unref();
+  res.json({ ok: true, count: files.length });
+});
+
 app.get('/api/status', (req, res) => {
   res.json({
     name: 'NearX Comics',
@@ -304,6 +389,7 @@ app.get('/api/status', (req, res) => {
     pageCents: PAGE_CREDITS * CENTS_PER_CREDIT,
     heroCents: HERO_CREDITS * CENTS_PER_CREDIT,
     maxPages: MAX_PAGES,
+    telegram: fs.existsSync(path.resolve(SITE, '..', 'bot', 'config.json')),
     remainingCredits: engineRemainingCredits(),
     styles: Object.fromEntries(Object.entries(STYLES).map(([k, v]) => [k, v.label]))
   });

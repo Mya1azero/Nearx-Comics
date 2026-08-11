@@ -14,7 +14,11 @@
     <div class="logo-top">NEAR<span class="logo-x">X</span></div>
     <div class="logo-bottom">COMICS</div>
   </div>
-  <div class="wallet" id="wallet">…</div>
+  <div class="head-right">
+    <span class="wallet" id="wallet">…</span>
+    <span class="saved" id="saved"></span>
+    <button class="link-del" id="resetJob" title="Начать новый комикс">новый комикс</button>
+  </div>
 </header>
 
 <div class="hero panel">
@@ -60,10 +64,14 @@
     <textarea id="story" rows="7" placeholder="Например: мы познакомились под дождём — у неё улетел зонт, я его поймал…"></textarea>
     <button id="mic" class="mic" title="Надиктовать">ГОЛОСОМ</button>
   </div>
-  <button class="ghost small" id="fillExample">Заполнить примером</button>
+  <div class="story-foot">
+    <span class="story-count" id="storyCount"></span>
+    <button class="ghost small" id="fillExample">Заполнить примером</button>
+  </div>
   <div class="row">
     <label class="mini-plate">СТРАНИЦ: <output id="pagesOut">6</output></label>
     <input type="range" id="pages" min="1" max="12" value="6">
+    <div class="pages-hint" id="pagesHint"></div>
   </div>
   <div class="row">
     <label class="mini-plate">ТОН</label>
@@ -84,8 +92,9 @@
   <p class="hint" id="drawHint"></p>
   <button class="primary big" id="draw">НАРИСОВАТЬ КОМИКС</button>
   <div id="album"></div>
-  <div class="nav-row">
+  <div class="nav-row album-nav">
     <button class="ghost" data-back="3">К сценарию</button>
+    <button class="ghost" id="toTelegram" style="display:none">Отправить в телеграм</button>
     <a class="ghost btn-link" id="zip" href="#" style="display:none">Скачать всё (ZIP)</a>
   </div>
 </section>

@@ -284,3 +284,105 @@ footer { text-align: center; color: var(--muted); font-size: 13px; padding: 26px
 .ex-strip a:hover img { transform: translateY(-3px); }
 button.small { font-size: 13px; padding: 6px 12px; margin-top: 10px; box-shadow: 2px 2px 0 var(--ink); }
 .cover-box .st { margin-bottom: 6px; }
+
+/* ---- шапка: кошелёк, автосохранение, сброс ---- */
+.head-right { display: flex; align-items: center; gap: 12px; padding-top: 6px; }
+.saved { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); opacity: 0; transition: opacity .3s; }
+.saved.show { opacity: 1; }
+.link-del {
+  background: none; border: none; color: var(--muted); font-family: 'Manrope'; font-weight: 700;
+  font-size: 12px; cursor: pointer; text-decoration: underline; padding: 2px 0;
+}
+.link-del:hover { color: var(--accent); }
+
+/* ---- карточка героя ---- */
+.hero-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.hero-num {
+  background: var(--ink); color: var(--yellow); font-family: 'Unbounded'; font-weight: 700;
+  font-size: 12px; letter-spacing: 1px; padding: 4px 10px;
+}
+.drop {
+  border: 3px dashed var(--ink); border-radius: 4px; padding: 14px; cursor: pointer;
+  background: #fffdf6; transition: background .15s;
+}
+.drop.over { background: var(--yellow); }
+.drop.busy { opacity: .6; pointer-events: none; }
+.drop-hint { color: var(--muted); font-size: 13px; font-weight: 600; margin-top: 8px; }
+.photo-cell { position: relative; }
+.photo-del {
+  position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: 2px solid var(--ink); font-size: 15px;
+  line-height: 1; cursor: pointer; font-weight: 700; padding: 0;
+}
+.card-fields { margin-top: 14px; }
+.hero-name {
+  width: 100%; background: #fffdf6; border: 2.5px solid var(--ink); border-radius: 3px;
+  padding: 10px 12px; font-family: 'Manrope'; font-weight: 700; font-size: 15px; color: var(--ink);
+}
+.desc-box { margin-top: 12px; border: 2.5px solid var(--ink); border-radius: 3px; padding: 10px 12px; background: #fffdf6; }
+.desc-label {
+  display: inline-block; background: var(--yellow); border: 2px solid var(--ink);
+  font-size: 10.5px; font-weight: 800; letter-spacing: .5px; padding: 2px 7px; margin-bottom: 8px;
+}
+.desc-text { font-size: 14.5px; font-weight: 600; line-height: 1.45; }
+.desc-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.desc-edit {
+  width: 100%; margin-top: 12px; background: #fffdf6; border: 2.5px solid var(--ink);
+  border-radius: 3px; padding: 10px 12px; font-family: 'Manrope'; font-size: 14.5px; font-weight: 600;
+  color: var(--ink); resize: vertical;
+}
+.hero-card.reading { position: relative; }
+.hero-card.reading::after {
+  content: 'читаю фото…'; position: absolute; inset: 0; background: rgba(253,252,248,.82);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Unbounded'; font-weight: 700; font-size: 14px; letter-spacing: .5px;
+}
+
+/* ---- история ---- */
+.story-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.story-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+.story-count.warn { color: var(--accent); }
+.pages-hint { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ---- редактор сценария ---- */
+.sc-head { margin-bottom: 16px; }
+.sc-title {
+  width: 100%; background: var(--yellow); border: 3px solid var(--ink); border-radius: 3px;
+  font-family: 'Unbounded'; font-weight: 700; font-size: 17px; padding: 9px 12px;
+  color: var(--ink); box-shadow: 3px 3px 0 var(--ink);
+}
+.sc-logline { color: var(--muted); font-weight: 600; font-size: 14px; margin-top: 10px; }
+.page-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.page-top h3 { margin: 0; flex: 1; }
+.panel-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+.panel-count.warn { color: var(--accent); }
+.beat-input {
+  width: 100%; margin: 10px 0 4px; background: var(--yellow); border: 2.5px solid var(--ink);
+  border-radius: 3px; padding: 6px 10px; font-family: 'Manrope'; font-weight: 700; font-size: 13.5px; color: var(--ink);
+}
+.panel-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.panel-label { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); }
+.cap-input {
+  width: 100%; margin-top: 6px; background: #fffdf6; border: 2px dashed var(--ink);
+  border-radius: 3px; padding: 6px 9px; font-family: 'Manrope'; font-weight: 600; font-size: 13px; color: var(--ink);
+}
+.x-btn {
+  width: 30px; border: 2.5px solid var(--ink); background: #fff; color: var(--ink);
+  border-radius: 3px; font-size: 16px; line-height: 1; cursor: pointer; font-weight: 700;
+}
+.x-btn:hover { background: var(--accent); color: #fff; }
+.add-panel { align-self: flex-start; margin-top: 6px; }
+.wish-input {
+  flex: 1; min-width: 160px; background: #fffdf6; border: 2.5px solid var(--ink);
+  border-radius: 3px; padding: 9px 10px; font-family: 'Manrope'; font-weight: 600; font-size: 14px; color: var(--ink);
+}
+.sc-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+.sc-price { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink); font-weight: 700; }
+
+/* ---- альбом ---- */
+.album-nav { flex-wrap: wrap; }
+.skel.failed {
+  animation: none; display: flex; align-items: center; justify-content: center;
+  color: var(--accent); font-family: 'Unbounded'; font-weight: 700; font-size: 14px;
+}
+.warn-hint { background: var(--accent); color: #fff; border-color: var(--ink); }

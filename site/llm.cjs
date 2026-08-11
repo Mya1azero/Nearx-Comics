@@ -161,4 +161,53 @@ async function rewritePage({ scenario, pageIndex, wish, mode, heroes, tone }) {
   return p;
 }
 
-module.exports = { makeScenario, rewritePage, hasKey: () => !!readKey() };
+/* --- Карточка героя по фото: человек ничего не описывает руками --- */
+
+const VISION_TASK = `Ты — художник-постановщик комикса. На фото — реальный человек, будущий герой книжки.
+Опиши ТОЛЬКО его внешность так, как пишут в листе персонажа, чтобы художник рисовал одного и того же человека на всех страницах.
+Пиши по-русски, одной строкой, 15–30 слов, через запятую: пол и примерный возраст, причёска и цвет волос, растительность на лице, цвет глаз, телосложение, одежда с фото, заметные приметы (очки, серьги, цепочка, татуировки).
+Никаких оценок внешности, диагнозов, национальности и имён. Если деталь не видно — не выдумывай, пропусти.
+Также придумай короткое «кто это по вайбу» — 2–4 слова (например «спокойный улыбчивый парень»).
+Ответ строго JSON: {"appearance":"…","vibe":"…"}`;
+
+async function callVision(model, imagePaths) {
+  const key = readKey();
+  if (!key) throw Object.assign(new Error('нет ключа'), { code: 'NO_KEY' });
+  const images = imagePaths.slice(0, 3).map(p => {
+    const ext = (path.extname(p) || '.jpg').slice(1).toLowerCase();
+    const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+    return { type: 'image_url', image_url: { url: `data:${mime};base64,${fs.readFileSync(p).toString('base64')}` } };
+  });
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: [{ type: 'text', text: VISION_TASK }, ...images] }],
+      response_format: { type: 'json_object' },
+      max_tokens: 700,
+      temperature: 0.4
+    })
+  });
+  if (!res.ok) throw new Error(`vision ${res.status}: ${(await res.text()).slice(0, 120)}`);
+  const data = await res.json();
+  const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!content) throw new Error('пустой ответ модели');
+  return parseLlmJson(content);
+}
+
+async function describePerson(photoPaths) {
+  if (!photoPaths || !photoPaths.length) throw new Error('нет фото');
+  let last;
+  for (const model of [CHEAP_MODEL, SMART_MODEL]) {
+    try {
+      const r = await callVision(model, photoPaths);
+      const appearance = String(r.appearance || '').trim().slice(0, 300);
+      if (appearance.length > 15) return { appearance, vibe: String(r.vibe || '').trim().slice(0, 60) };
+      last = new Error('модель описала слишком коротко');
+    } catch (e) { last = e; if (e.code === 'NO_KEY') break; }
+  }
+  throw last || new Error('не вышло разобрать фото');
+}
+
+module.exports = { makeScenario, rewritePage, describePerson, hasKey: () => !!readKey() };

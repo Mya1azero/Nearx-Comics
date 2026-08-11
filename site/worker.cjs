@@ -127,6 +127,7 @@ function pagesStatus(job) {
     job = readJob();
     if (ONLY_PAGE === null && job.pages[i] && job.pages[i].status === 'done') continue; // resume
     job.pages[i] = { n: i + 1, status: 'drawing' };
+    job.heartbeat = new Date().toISOString();   // по нему видно, что рисовальщик жив
     writeJob(job);
     let result = null, err = '';
     for (let attempt = 1; attempt <= 2 && !result; attempt++) {
@@ -134,6 +135,7 @@ function pagesStatus(job) {
       catch (e) { err = String(e.message).slice(0, 200); log(`стр.${i + 1} попытка ${attempt}: ${err}`); }
     }
     job = readJob();
+    job.heartbeat = new Date().toISOString();
     if (result) {
       job.pages[i] = { n: i + 1, status: 'done', raw: result.raw, framed: result.framed };
       job.spentCredits = (job.spentCredits || 0) + result.credits;
