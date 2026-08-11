@@ -1,0 +1,7 @@
+node_modules/
+out/
+gallery.html
+fonts/*.ttf
+fonts/*.otf
+.env
+.DS_Store

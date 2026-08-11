@@ -1,0 +1,19 @@
+{
+  "name": "neo3-visual",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Генерация рекламных креативов через kie.ai: одним промптом — N вариантов от разных моделей, текст накладывается кодом, расход считается заранее.",
+  "type": "module",
+  "bin": {
+    "vis": "./bin/vis.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "sharp": "^0.34.2"
+  },
+  "scripts": {
+    "gallery": "node bin/vis.js gallery"
+  }
+}

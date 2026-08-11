@@ -1,0 +1,19 @@
+# секреты — только через переменные окружения или локальные .env
+*.env
+.env
+site/.env
+bot/.env
+neo3-visual/.env
+
+# тяжёлое и временное
+node_modules/
+neo3-visual/out/
+site/uploads/
+site/jobs/
+*.log
+*.pid
+*.tmp
+nohup.out
+
+# локальные фото владельца
+фото/

@@ -1,0 +1,9 @@
+{
+  "_комментарий": "Предохранитель расходов. Считается по out/ledger.jsonl. Правится руками под себя.",
+  "totalCreditsCap": 2000,
+  "perRunUsdCap": 0.5,
+  "warnBalancePercent": 10,
+  "usdPerCredit": 0.005,
+  "startingBalance": 10080,
+  "_сверка": "startingBalance — твой баланс kie.ai на момент старта (посмотреть: vis credits). Поставь своё число, иначе vis reconcile сверять не с чем."
+}

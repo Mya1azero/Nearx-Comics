@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: nearx-comics
+    runtime: node
+    plan: free
+    buildCommand: cd neo3-visual && npm install --omit=dev && cd ../site && npm install --omit=dev
+    startCommand: node site/server.cjs
+    envVars:
+      - key: KIE_API_KEY
+        sync: false
+      - key: TG_BOT_TOKEN
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
