@@ -63,6 +63,36 @@ async function callOpenRouter(model, system, user, maxTokens) {
   return parseLlmJson(content);
 }
 
+// Модель часто путает ширины кадров и лепит ряды из 3 кадров по cols=2.
+// Чинить это дешевле, чем гонять её заново: ширины восстанавливаются по числу
+// кадров в ряду, слишком длинные ряды разбиваются, лишние пузыри срезаются.
+const COLS_BY_COUNT = { 1: [3], 2: [2, 1], 3: [1, 1, 1] };
+
+function repairScenario(sc) {
+  if (!sc || !Array.isArray(sc.pages)) return sc;
+  sc.pages.forEach((p, pi) => {
+    p.n = pi + 1;
+    const rows = [];
+    (p.rows || []).forEach(r => {
+      let panels = (r.panels || []).filter(x => x && x.scene);
+      while (panels.length > 3) rows.push({ panels: panels.splice(0, 3) });
+      if (panels.length) rows.push({ panels });
+    });
+    rows.forEach(r => {
+      const widths = COLS_BY_COUNT[r.panels.length] || [1, 1, 1];
+      // сохраняем задумку: самый «широкий» по замыслу кадр получает больше колонок
+      const order = r.panels.map((pan, i) => ({ i, w: pan.cols || 1 }))
+        .sort((a, b) => b.w - a.w || a.i - b.i);
+      order.forEach((o, k) => { r.panels[o.i].cols = widths[k]; });
+      r.panels.forEach(pan => {
+        if (Array.isArray(pan.bubbles) && pan.bubbles.length > 2) pan.bubbles = pan.bubbles.slice(0, 2);
+      });
+    });
+    p.rows = rows;
+  });
+  return sc;
+}
+
 function validateScenario(sc, wantPages) {
   const errs = [];
   if (!sc || !Array.isArray(sc.pages)) return ['нет pages'];
@@ -96,15 +126,22 @@ async function makeScenario({ story, pagesCount, tone, heroes }) {
   }
   const heroLines = heroes.map(h => `- ${h.name}: ${h.desc}`).join('\n');
   const user = `Герои:\n${heroLines}\n\nТон: ${tone}\nСтраниц: ровно ${pagesCount}.\n\nИстория от заказчика (разверни её в подробный сюжет с деталями и живыми диалогами):\n${story}`;
-  let sc = await callOpenRouter(CHEAP_MODEL, CRAFT, user);
+  let sc = repairScenario(await callOpenRouter(CHEAP_MODEL, CRAFT, user));
   let errs = validateScenario(sc, pagesCount);
   if (errs.length) {
     const fixUser = `${user}\n\nТвой прошлый JSON имел ошибки, исправь их все и верни полный JSON заново:\n${errs.join('\n')}`;
-    sc = await callOpenRouter(CHEAP_MODEL, CRAFT, fixUser);
-    errs = validateScenario(sc, pagesCount);
-    if (errs.length) throw new Error('сценарий не прошёл проверку: ' + errs.slice(0, 3).join('; '));
+    const second = repairScenario(await callOpenRouter(CHEAP_MODEL, CRAFT, fixUser));
+    const errs2 = validateScenario(second, pagesCount);
+    // берём вариант с меньшим числом огрехов
+    if (errs2.length <= errs.length) { sc = second; errs = errs2; }
   }
-  return { scenario: sc, demo: false };
+  // Жёстко валим только то, что не починить: пустой или бессвязный сценарий.
+  if (!sc || !Array.isArray(sc.pages) || !sc.pages.length)
+    throw new Error('сценарист вернул пустой сценарий, попробуй ещё раз');
+  // Число страниц выравниваем сами: лишнее срезаем, недостающее не выдумываем.
+  if (sc.pages.length > pagesCount) sc.pages = sc.pages.slice(0, pagesCount);
+  sc.pages.forEach((p, i) => { p.n = i + 1; });
+  return { scenario: sc, demo: false, warnings: errs };
 }
 
 async function rewritePage({ scenario, pageIndex, wish, mode, heroes, tone }) {
@@ -115,7 +152,9 @@ async function rewritePage({ scenario, pageIndex, wish, mode, heroes, tone }) {
     ? 'Перепиши ТОЛЬКО реплики этой страницы: живее, острее, естественнее, с характером. Структуру кадров не меняй.'
     : `Перепиши эту страницу целиком с учётом пожелания: «${wish || 'сделай интереснее'}».`;
   const user = `Герои:\n${heroLines}\nТон: ${tone}\nЛоглайн: ${scenario.logline}\n\n${task}\n\nСтраница сейчас (JSON):\n${JSON.stringify(page)}\n\nВерни СТРОГО JSON одной страницы того же формата {"n":…,"beat":…,"rows":[…]}.`;
-  const p = await callOpenRouter(model, CRAFT, user, 4000);
+  const raw = await callOpenRouter(model, CRAFT, user, 4000);
+  const p = repairScenario({ pages: [raw] }).pages[0];
+  p.n = pageIndex + 1;
   const test = { ...scenario, pages: scenario.pages.map((x, i) => i === pageIndex ? p : x) };
   const errs = validateScenario(test, scenario.pages.length);
   if (errs.some(e => e.startsWith(`стр.${pageIndex + 1}`))) throw new Error('переписанная страница кривая, попробуй ещё раз');
